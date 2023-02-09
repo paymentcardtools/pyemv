@@ -271,10 +271,18 @@ def _decode(
                     data, ofst, ofst + tag_len, dec, flatten, simple, dol, convert
                 )
             else:
-                dec[tag] = {}
+                tmp = {}
                 ofst = _decode(
-                    data, ofst, ofst + tag_len, dec[tag], flatten, simple, dol, convert
+                    data, ofst, ofst + tag_len, tmp, flatten, simple, dol, convert
                 )
+
+                if tag not in dec:
+                    dec[tag] = tmp
+                elif isinstance(dec[tag], list):
+                    dec[tag].append(tmp)
+                else:
+                    dec[tag] = [dec[tag], tmp]
+
         # Primitive data type
         else:
             dec[tag] = convert(tag, data[ofst : ofst + tag_len])
