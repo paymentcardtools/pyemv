@@ -213,6 +213,9 @@ def _decode(
         tag = data[ofst : ofst + tag_name_len].hex().upper()
         ofst += tag_name_len
 
+        if tag == '00':
+            continue
+
         # Determine tag length
         tag_len_len = 1
 
