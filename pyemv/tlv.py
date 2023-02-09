@@ -102,6 +102,7 @@ def decode(
     *,
     flatten: _t.Optional[bool] = None,
     simple: _t.Optional[bool] = None,
+    dol: _t.Optional[bool] = None,
     convert: _t.Optional[_t.Callable[[str, _t.Union[bytes, bytearray]], _t.Any]] = None,
 ) -> _t.Dict[str, _t.Any]:
     r"""Decode TLV data.
@@ -157,13 +158,16 @@ def decode(
     if simple is None:
         simple = False
 
+    if dol is None:
+        dol = False
+
     if convert is None:
         convert = lambda t, v: bytes(v)
 
     dec: _t.Dict[str, _t.Any] = {}
 
     try:
-        _decode(data, 0, len(data), dec, flatten, simple, convert)
+        _decode(data, 0, len(data), dec, flatten, simple, dol, convert)
     except DecodeError as e:
         # Catch the error here to provide reference
         # to a partically decoded data.
@@ -179,6 +183,7 @@ def _decode(
     dec: _t.Dict[str, _t.Any],
     flatten: bool,
     simple: bool,
+    dol: bool,
     convert: _t.Callable[[str, _t.Union[bytes, bytearray]], _S],
 ) -> int:
     while ofst < ofst_limit:
@@ -246,6 +251,10 @@ def _decode(
             tag_len = data[ofst]
             ofst += tag_len_len
 
+        if dol:
+            dec[tag] = tag_len
+            continue
+
         # Check that tag data falls within parent tag
         if ofst + tag_len > ofst_limit:
             raise DecodeError(
@@ -259,12 +268,12 @@ def _decode(
         if constructed:
             if flatten:
                 ofst = _decode(
-                    data, ofst, ofst + tag_len, dec, flatten, simple, convert
+                    data, ofst, ofst + tag_len, dec, flatten, simple, dol, convert
                 )
             else:
                 dec[tag] = {}
                 ofst = _decode(
-                    data, ofst, ofst + tag_len, dec[tag], flatten, simple, convert
+                    data, ofst, ofst + tag_len, dec[tag], flatten, simple, dol, convert
                 )
         # Primitive data type
         else:
